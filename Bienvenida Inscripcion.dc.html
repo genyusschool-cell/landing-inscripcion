@@ -120,32 +120,28 @@
                     <input type="date" style="width:100%;box-sizing:border-box;font-family:var(--font-body);font-size:15px;color:var(--ink-600);padding:12px 14px;border:1.5px solid var(--border-default);border-radius:10px;background:#fff">
                   </label>
                   <label style="display:block">
-                    <span style="display:block;font-weight:600;font-size:14px;color:var(--ink-800);margin-bottom:8px">Curso escolar actual (26/27) <span style="color:var(--gs-pink)">*</span></span>
-                    <div style="position:relative">
-                      <select style="position:relative;z-index:2;width:100%;box-sizing:border-box;appearance:none;font-family:var(--font-body);font-size:15px;color:var(--ink-800);padding:12px 40px 12px 14px;border:1.5px solid var(--border-default);border-radius:10px;background:#fff;cursor:pointer">
-                        <option value="">Selecciona</option>
-                        <option>5º EP</option><option>6º EP</option>
-                        <option>1º ESO</option><option>2º ESO</option>
-                        <option>3º ESO</option><option>4º ESO</option>
-                      </select>
-                      <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;z-index:1;color:var(--ink-400)"><i data-lucide="chevron-down" style="width:18px;height:18px"></i></span>
-                    </div>
+                    <span style="display:block;font-weight:600;font-size:14px;color:var(--ink-800);margin-bottom:8px">Colegio / Centro educativo <span style="color:var(--gs-pink)">*</span></span>
+                    <input type="text" style="width:100%;box-sizing:border-box;font-family:var(--font-body);font-size:15px;color:var(--ink-800);padding:12px 14px;border:1.5px solid var(--border-default);border-radius:10px;background:#fff">
                   </label>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
                   <label style="display:block">
-                    <span style="display:block;font-weight:600;font-size:14px;color:var(--ink-800);margin-bottom:8px">Colegio / Centro educativo <span style="color:var(--gs-pink)">*</span></span>
-                    <input type="text" style="width:100%;box-sizing:border-box;font-family:var(--font-body);font-size:15px;color:var(--ink-800);padding:12px 14px;border:1.5px solid var(--border-default);border-radius:10px;background:#fff">
-                  </label>
-                  <label style="display:block">
                     <span style="display:block;font-weight:600;font-size:14px;color:var(--ink-800);margin-bottom:8px">Localidad / Municipio <span style="color:var(--gs-pink)">*</span></span>
                     <input type="text" style="width:100%;box-sizing:border-box;font-family:var(--font-body);font-size:15px;color:var(--ink-800);padding:12px 14px;border:1.5px solid var(--border-default);border-radius:10px;background:#fff">
                   </label>
+                  <label style="display:block">
+                    <span style="display:block;font-weight:600;font-size:14px;color:var(--ink-800);margin-bottom:8px">Provincia <span style="color:var(--gs-pink)">*</span></span>
+                    <input type="text" style="width:100%;box-sizing:border-box;font-family:var(--font-body);font-size:15px;color:var(--ink-800);padding:12px 14px;border:1.5px solid var(--border-default);border-radius:10px;background:#fff">
+                  </label>
                 </div>
-                <label style="display:block">
-                  <span style="display:block;font-weight:600;font-size:14px;color:var(--ink-800);margin-bottom:8px">Provincia <span style="color:var(--gs-pink)">*</span></span>
-                  <input type="text" style="width:100%;box-sizing:border-box;font-family:var(--font-body);font-size:15px;color:var(--ink-800);padding:12px 14px;border:1.5px solid var(--border-default);border-radius:10px;background:#fff">
-                </label>
+                <div>
+                  <span style="display:block;font-weight:600;font-size:14px;color:var(--ink-800);margin-bottom:10px">Curso escolar actual (26/27) <span style="color:var(--gs-pink)">*</span></span>
+                  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+                    <sc-for list="{{ cursos }}" as="c" hint-placeholder-count="6">
+                      <button type="button" onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button>
+                    </sc-for>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -208,7 +204,7 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{ &quot;$preview&quot;: { &quot;width&quot;: 1000, &quot;height&quot;: 900 } }">
 class Component extends DCLogic {
-  state = { program: null, phase: "idle", sentReservar: false };
+  state = { program: null, phase: "idle", sentReservar: false, cursoSel: null };
   pick(key) {
     if (this.state.phase === "checking") return;
     this.setState({ program: key, phase: "checking" });
@@ -240,12 +236,21 @@ class Component extends DCLogic {
       fetch(url, { method: "POST", mode: "no-cors", body: JSON.stringify({ text }) });
     } catch (e) {}
   }
+  sheetSend(url, rows) {
+    const payload = {};
+    rows.forEach((r) => { payload[r[0]] = r[1]; });
+    try {
+      fetch(url, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) });
+    } catch (e) {}
+  }
   submitReservar(e) {
     e.preventDefault();
     const rows = this.readForm(e.target);
+    rows.push(["Curso escolar actual (26/27)", this.state.cursoSel || "—"]);
     const prog = this.state.program === "academy" ? "Genyus Academy" : this.state.program === "lab" ? "Genyus Lab" : "—";
     rows.unshift(["Programa elegido", prog]);
     this.slackSend(this.hook(["T0B9P10C1C7", "B0BP5KD5WUE", "rN60BNDz82uJLi2" + "xRbTnPOVk"]), "Nueva inscripción — Bienvenida", rows);
+    this.sheetSend("https://script.google.com/macros/s/AKfycbzmwiuyvYLlA9mp21-L9jdiyVhw95s8MUjjwFqsSjIiS20J3NsNk3avdGyTzcvsx_yRxw/exec", rows);
     this.setState({ sentReservar: true });
   }
   renderVals() {
@@ -258,7 +263,11 @@ class Component extends DCLogic {
       transition: "border-color .18s ease, box-shadow .18s ease",
     };
     const sel = (on, ring, color) => on ? { borderColor: color, boxShadow: "0 0 0 3px " + ring } : {};
+    const chipBase = { padding: "11px 8px", textAlign: "center", border: "1.5px solid var(--border-default)", borderRadius: "10px", background: "#fff", cursor: "pointer", fontFamily: "var(--font-body)", fontSize: "14px", fontWeight: 600, color: "var(--ink-800)", transition: "all .15s ease" };
+    const chipOn = { borderColor: "var(--gs-blue)", background: "rgba(26,172,255,.10)", color: "var(--gs-blue)", boxShadow: "0 0 0 3px rgba(26,172,255,.15)" };
+    const cursos = ["5º EP", "6º EP", "1º ESO", "2º ESO", "3º ESO", "4º ESO"].map((label) => ({ label, onClick: () => this.setState({ cursoSel: label }), style: this.state.cursoSel === label ? { ...chipBase, ...chipOn } : chipBase }));
     return {
+      cursos,
       program,
       isChecking: phase === "checking",
       isAvailable: revealed,
